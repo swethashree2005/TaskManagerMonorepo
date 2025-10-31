@@ -1,43 +1,64 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { supabase } from "../../../lib/supabaseClient";
 import { toggleComplete, deleteTask, updateTask } from "./serverActions";
 import { motion } from "framer-motion";
 
+// ✅ Define Task type (matches your Supabase 'tasks' table)
+type Task = {
+  id: number;
+  title: string;
+  iscompleted: boolean;
+  userid: string;
+};
+
 export function TaskList({ userId }: { userId: string }) {
-  const [tasks, setTasks] = useState([]);
+  // ✅ Use a strongly typed array
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [editId, setEditId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState("");
 
+  // ✅ Fetch all tasks from Supabase
   useEffect(() => {
     let ignore = false;
+
     async function fetchTasks() {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("tasks")
         .select("*")
         .eq("userid", userId)
         .order("id", { ascending: false });
-      if (!ignore) setTasks(data!);
+
+      if (error) {
+        console.error("Error fetching tasks:", error.message);
+        return;
+      }
+
+      if (!ignore && data) setTasks(data as Task[]);
     }
+
     fetchTasks();
     return () => {
       ignore = true;
     };
   }, [userId]);
 
+  // ✅ Toggle task completion
   async function handleToggle(id: number, iscompleted: boolean) {
     await toggleComplete(id, userId, iscompleted);
-    setTasks((tasks) =>
-      tasks.map((t) =>
-        t.id === id ? { ...t, iscompleted: !t.iscompleted } : t
-      )
+    setTasks((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, iscompleted: !t.iscompleted } : t))
     );
   }
+
+  // ✅ Delete a task
   async function handleDelete(id: number) {
     await deleteTask(id, userId);
-    setTasks((tasks) => tasks.filter((t) => t.id !== id));
+    setTasks((prev) => prev.filter((t) => t.id !== id));
   }
 
+  // ✅ Edit functions
   function startEditing(id: number, currentTitle: string) {
     setEditId(id);
     setEditTitle(currentTitle);
@@ -45,8 +66,8 @@ export function TaskList({ userId }: { userId: string }) {
 
   async function saveEdit(id: number) {
     await updateTask(id, userId, editTitle);
-    setTasks((tasks) =>
-      tasks.map((t) => (t.id === id ? { ...t, title: editTitle } : t))
+    setTasks((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, title: editTitle } : t))
     );
     setEditId(null);
     setEditTitle("");
@@ -57,6 +78,7 @@ export function TaskList({ userId }: { userId: string }) {
     setEditTitle("");
   }
 
+  // ✅ Render list
   return (
     <motion.ul
       className="w-full max-w-xl mx-auto space-y-3 mt-6 text-black"
@@ -106,6 +128,7 @@ export function TaskList({ userId }: { userId: string }) {
               >
                 {task.title}
               </span>
+
               <div className="flex gap-2">
                 <button
                   onClick={() => handleToggle(task.id, task.iscompleted)}
@@ -117,12 +140,14 @@ export function TaskList({ userId }: { userId: string }) {
                 >
                   {task.iscompleted ? "Undo" : "Done"}
                 </button>
+
                 <button
                   onClick={() => startEditing(task.id, task.title)}
                   className="bg-blue-400 text-white p-2 rounded hover:bg-blue-600 transition-colors"
                 >
                   Edit
                 </button>
+
                 <button
                   onClick={() => handleDelete(task.id)}
                   className="bg-red-400 hover:bg-red-600 p-2 rounded text-white transition-colors"
