@@ -5,6 +5,7 @@ import { supabase } from "../../../lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import { TaskForm } from "./TaskForm";
 import { TaskList } from "./TaskList";
+import type { User } from "@supabase/supabase-js"; // ✅ import the correct type
 
 function SignOutButton() {
   const router = useRouter();
@@ -25,18 +26,28 @@ function SignOutButton() {
 }
 
 export default function Dashboard() {
-  const [user, setUser] = useState<any>(null);
+  // ✅ use the correct Supabase User type
+  const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    const sessionUser = supabase.auth.getUser();
-    sessionUser.then(({ data }) => {
-      if (!data.user) {
+    const fetchUser = async () => {
+      const { data, error } = await supabase.auth.getUser();
+
+      if (error) {
+        console.error("Error fetching user:", error.message);
+        router.push("/");
+        return;
+      }
+
+      if (!data?.user) {
         router.push("/");
       } else {
         setUser(data.user);
       }
-    });
+    };
+
+    fetchUser();
   }, [router]);
 
   if (!user) return <div>Loading...</div>;

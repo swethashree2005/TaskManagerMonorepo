@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 
 export default function Home() {
   const router = useRouter();
-  const imageUrl = "/task-manager-logo.png"; // Image placed in /public folder
 
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-indigo-400 via-purple-300 to-pink-300">
