@@ -1,17 +1,7 @@
 "use client";
-import { useRef, useState } from "react";
-import { addTask } from "./serverActions";
-import { z } from "zod";
-import { motion } from "framer-motion";
 
-const schema = z.object({
-  title: z
-    .string()
-    .min(1, { message: "Task cannot be empty!" })
-    .refine((val) => /\D/.test(val), {
-      message: "Task cannot contain only numbers!",
-    }),
-});
+import { useState } from "react";
+import { addTask } from "./serverActions";
 
 export function TaskForm({
   userId,
@@ -20,41 +10,40 @@ export function TaskForm({
   userId: string;
   onTaskAdded: () => void;
 }) {
-  const ref = useRef<HTMLInputElement>(null);
-  const [error, setError] = useState("");
+  const [title, setTitle] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    const title = ref.current?.value || "";
-    const validation = schema.safeParse({ title });
-    if (!validation.success) {
-      setError("Task cannot be empty!");
-      return;
+    if (!title.trim()) return;
+
+    setLoading(true);
+    try {
+      await addTask({ title, userId });
+      setTitle("");
+      onTaskAdded();
+    } catch (err) {
+      console.error("Add task failed:", err);
+    } finally {
+      setLoading(false);
     }
-    setError("");
-    await addTask({ title, userId });
-    ref.current!.value = "";
-    onTaskAdded(); // ✅ Tell Dashboard to refresh list
   };
 
   return (
-    <motion.form
-      onSubmit={handleAdd}
-      className="flex py-4 gap-4 justify-center items-center"
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-    >
+    <form onSubmit={handleAdd} className="flex justify-center mt-8 mb-10 gap-3">
       <input
-        ref={ref}
-        className="p-3 rounded border shadow bg-white text-lg text-black"
-        placeholder="Add new task"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="Add a new task..."
+        className="text-black border-2 border-purple-400 rounded-lg px-4 py-2 w-80 focus:outline-none focus:ring-2 focus:ring-purple-500"
       />
-      <button className="bg-gradient-to-r from-blue-400 to-purple-400 hover:scale-110 transition-transform px-5 py-2 rounded text-white shadow">
-        Add
+      <button
+        type="submit"
+        disabled={loading}
+        className="bg-purple-600 text-white px-5 py-2 rounded-lg hover:bg-purple-700 transition disabled:opacity-50"
+      >
+        {loading ? "Adding..." : "Add"}
       </button>
-      {error && (
-        <span className="text-red-500 ml-3 animate-bounce">{error}</span>
-      )}
-    </motion.form>
+    </form>
   );
 }

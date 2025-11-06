@@ -1,45 +1,52 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { supabase } from "../../../lib/supabaseClient";
+import { TaskItem } from "./TaskItem";
 
-import { motion } from "framer-motion";
-
-// ✅ Define Task type (matches your Supabase 'tasks' table)
-type Task = {
-  id: number;
-  title: string;
-  iscompleted: boolean;
-  userid: string;
-};
-
-// ✅ Fix: add refreshKey to props
-type TaskListProps = {
+export function TaskList({
+  userId,
+  refreshKey,
+}: {
   userId: string;
-  refreshKey?: number; // <-- added this line
-};
+  refreshKey: number;
+}) {
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-export function TaskList({ userId, refreshKey }: TaskListProps) {
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const fetchTasks = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("tasks")
+      .select("*")
+      .eq("userid", userId)
+      .order("id", { ascending: false });
+
+    if (error) console.error("Error fetching tasks:", error.message);
+    setTasks(data || []);
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const fetchTasks = async () => {
-      const { data, error } = await supabase
-        .from("tasks")
-        .select("*")
-        .eq("userid", userId);
-
-      if (!error && data) setTasks(data);
-    };
-
     fetchTasks();
-  }, [userId, refreshKey]); // ✅ added refreshKey so it reloads when changed
+  }, [refreshKey]);
+
+  if (loading) return <p className="text-center text-gray-600">Loading...</p>;
+
+  if (tasks.length === 0)
+    return (
+      <p className="text-center text-gray-500 italic">No tasks yet. Add one!</p>
+    );
 
   return (
-    <div>
+    <div className="max-w-lg mx-auto">
       {tasks.map((task) => (
-        <motion.div key={task.id} className="p-2 border-b">
-          <p>{task.title}</p>
-        </motion.div>
+        <TaskItem
+          key={task.id}
+          task={task}
+          userId={userId}
+          refresh={fetchTasks}
+        />
       ))}
     </div>
   );
