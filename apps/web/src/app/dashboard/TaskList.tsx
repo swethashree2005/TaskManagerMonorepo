@@ -5,25 +5,23 @@ import { supabase } from "../../../lib/supabaseClient";
 import { toggleComplete, deleteTask, updateTask } from "./serverActions";
 import { motion } from "framer-motion";
 
-// ✅ Define Task type (matches your Supabase 'tasks' table)
-type Task = {
+interface Task {
   id: number;
   title: string;
-  iscompleted: boolean;
   userid: string;
-};
+  iscompleted: boolean;
+}
 
 export function TaskList({ userId }: { userId: string }) {
-  // ✅ Use a strongly typed array
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [editId, setEditId] = useState<number | null>(null);
-  const [editTitle, setEditTitle] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editText, setEditText] = useState("");
 
-  // ✅ Fetch all tasks from Supabase
+  // ✅ Fetch tasks when userId changes or after reload
   useEffect(() => {
-    let ignore = false;
-
     async function fetchTasks() {
+      console.log("Fetching tasks for:", userId);
       const { data, error } = await supabase
         .from("tasks")
         .select("*")
@@ -31,134 +29,111 @@ export function TaskList({ userId }: { userId: string }) {
         .order("id", { ascending: false });
 
       if (error) {
-        console.error("Error fetching tasks:", error.message);
-        return;
+        console.error("Error fetching tasks:", error);
+        setTasks([]);
+      } else {
+        console.log("Fetched data:", data);
+        setTasks(data || []);
       }
-
-      if (!ignore && data) setTasks(data as Task[]);
+      setLoading(false);
     }
 
-    fetchTasks();
-    return () => {
-      ignore = true;
-    };
+    if (userId) fetchTasks();
   }, [userId]);
 
-  // ✅ Toggle task completion
+  // ✅ Toggle complete
   async function handleToggle(id: number, iscompleted: boolean) {
     await toggleComplete(id, userId, iscompleted);
     setTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, iscompleted: !t.iscompleted } : t))
+      prev.map((t) => (t.id === id ? { ...t, iscompleted: !iscompleted } : t))
     );
   }
 
-  // ✅ Delete a task
+  // ✅ Delete task
   async function handleDelete(id: number) {
     await deleteTask(id, userId);
     setTasks((prev) => prev.filter((t) => t.id !== id));
   }
 
-  // ✅ Edit functions
-  function startEditing(id: number, currentTitle: string) {
-    setEditId(id);
-    setEditTitle(currentTitle);
-  }
-
-  async function saveEdit(id: number) {
-    await updateTask(id, userId, editTitle);
+  // ✅ Edit / Save task
+  async function handleSave(id: number) {
+    if (!editText.trim()) return;
+    await updateTask(id, userId, editText);
     setTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, title: editTitle } : t))
+      prev.map((t) => (t.id === id ? { ...t, title: editText } : t))
     );
-    setEditId(null);
-    setEditTitle("");
+    setEditingId(null);
+    setEditText("");
   }
 
-  function cancelEdit() {
-    setEditId(null);
-    setEditTitle("");
+  if (loading) {
+    return <p className="text-center text-gray-500">Loading tasks...</p>;
   }
 
-  // ✅ Render list
+  if (tasks.length === 0) {
+    return <p className="text-center text-gray-500">No tasks yet. Add one!</p>;
+  }
+
   return (
-    <motion.ul
-      className="w-full max-w-xl mx-auto space-y-3 mt-6 text-black"
-      initial="hidden"
-      animate="show"
-      variants={{
-        hidden: {},
-        show: { transition: { staggerChildren: 0.1 } },
-      }}
+    <motion.div
+      className="flex flex-col gap-3 w-full max-w-lg mx-auto mt-6"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
     >
       {tasks.map((task) => (
-        <motion.li
+        <motion.div
           key={task.id}
-          className={`flex items-center justify-between p-4 rounded shadow bg-white ${
-            task.iscompleted ? "opacity-60 line-through" : ""
+          className={`flex justify-between items-center p-3 rounded-xl shadow-md ${
+            task.iscompleted ? "bg-green-100" : "bg-white"
           }`}
-          variants={{
-            hidden: { x: -50, opacity: 0 },
-            show: { x: 0, opacity: 1 },
-          }}
+          whileHover={{ scale: 1.02 }}
         >
-          {editId === task.id ? (
-            <>
-              <input
-                className="flex-grow border rounded p-2 mr-4"
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-              />
+          {editingId === task.id ? (
+            <input
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              className="flex-1 p-2 border rounded text-black"
+              autoFocus
+            />
+          ) : (
+            <p
+              onClick={() => handleToggle(task.id, task.iscompleted)}
+              className={`flex-1 cursor-pointer ${
+                task.iscompleted ? "line-through text-gray-500" : "text-black"
+              }`}
+            >
+              {task.title}
+            </p>
+          )}
+
+          <div className="flex gap-2">
+            {editingId === task.id ? (
               <button
-                className="bg-green-400 px-3 py-1 rounded text-white mr-2"
-                onClick={() => saveEdit(task.id)}
+                onClick={() => handleSave(task.id)}
+                className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
               >
                 Save
               </button>
+            ) : (
               <button
-                className="bg-gray-400 px-3 py-1 rounded text-white"
-                onClick={cancelEdit}
+                onClick={() => {
+                  setEditingId(task.id);
+                  setEditText(task.title);
+                }}
+                className="bg-yellow-400 text-black px-3 py-1 rounded hover:bg-yellow-500"
               >
-                Cancel
+                Edit
               </button>
-            </>
-          ) : (
-            <>
-              <span
-                className="text-lg flex-grow cursor-pointer"
-                onDoubleClick={() => startEditing(task.id, task.title)}
-              >
-                {task.title}
-              </span>
-
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleToggle(task.id, task.iscompleted)}
-                  className={`rounded p-2 ${
-                    task.iscompleted
-                      ? "bg-green-400 hover:bg-green-600"
-                      : "bg-yellow-300 hover:bg-yellow-500"
-                  } transition-colors`}
-                >
-                  {task.iscompleted ? "Undo" : "Done"}
-                </button>
-
-                <button
-                  onClick={() => startEditing(task.id, task.title)}
-                  className="bg-blue-400 text-white p-2 rounded hover:bg-blue-600 transition-colors"
-                >
-                  Edit
-                </button>
-
-                <button
-                  onClick={() => handleDelete(task.id)}
-                  className="bg-red-400 hover:bg-red-600 p-2 rounded text-white transition-colors"
-                >
-                  Delete
-                </button>
-              </div>
-            </>
-          )}
-        </motion.li>
+            )}
+            <button
+              onClick={() => handleDelete(task.id)}
+              className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+            >
+              Delete
+            </button>
+          </div>
+        </motion.div>
       ))}
-    </motion.ul>
+    </motion.div>
   );
 }

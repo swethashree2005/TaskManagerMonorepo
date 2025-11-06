@@ -5,7 +5,7 @@ import { supabase } from "../../../lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import { TaskForm } from "./TaskForm";
 import { TaskList } from "./TaskList";
-import type { User } from "@supabase/supabase-js"; // ✅ import the correct type
+import type { User } from "@supabase/supabase-js";
 
 function SignOutButton() {
   const router = useRouter();
@@ -26,8 +26,8 @@ function SignOutButton() {
 }
 
 export default function Dashboard() {
-  // ✅ use the correct Supabase User type
   const [user, setUser] = useState<User | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   const router = useRouter();
 
   useEffect(() => {
@@ -58,8 +58,11 @@ export default function Dashboard() {
       <h1 className="text-5xl font-bold text-center py-10 text-purple-700 animate-fade-in">
         Personal TODOs
       </h1>
-      <TaskForm userId={user.id} />
-      <TaskList userId={user.id} />
+      <TaskForm
+        userId={user.id}
+        onTaskAdded={() => setRefreshKey((k) => k + 1)}
+      />
+      <TaskList userId={user.id} refreshKey={refreshKey} />
     </div>
   );
 }

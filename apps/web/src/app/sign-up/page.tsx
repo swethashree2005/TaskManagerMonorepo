@@ -35,7 +35,7 @@ export default function SignUp() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Email"
-          className="p-3 rounded bg-pink-50 border"
+          className="text-black p-3 rounded bg-pink-50 border"
           required
         />
         <input

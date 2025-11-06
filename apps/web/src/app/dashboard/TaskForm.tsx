@@ -13,7 +13,13 @@ const schema = z.object({
     }),
 });
 
-export function TaskForm({ userId }: { userId: string }) {
+export function TaskForm({
+  userId,
+  onTaskAdded,
+}: {
+  userId: string;
+  onTaskAdded: () => void;
+}) {
   const ref = useRef<HTMLInputElement>(null);
   const [error, setError] = useState("");
 
@@ -28,6 +34,7 @@ export function TaskForm({ userId }: { userId: string }) {
     setError("");
     await addTask({ title, userId });
     ref.current!.value = "";
+    onTaskAdded(); // ✅ Tell Dashboard to refresh list
   };
 
   return (
