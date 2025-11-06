@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { supabase } from "../../../lib/supabaseClient";
-import { toggleComplete, deleteTask, updateTask } from "./serverActions";
+
 import { motion } from "framer-motion";
 
 // ✅ Define Task type (matches your Supabase 'tasks' table)
