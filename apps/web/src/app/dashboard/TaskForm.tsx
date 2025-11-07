@@ -1,49 +1,64 @@
 "use client";
-
 import { useState } from "react";
-import { addTask } from "./serverActions";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
-export function TaskForm({
-  userId,
-  onTaskAdded,
+interface Task {
+  id: number;
+  title: string;
+  iscompleted: boolean;
+  userid: string;
+  created_at: string;
+}
+
+export default function TaskForm({
+  initialTask,
+  onSave,
+  onCancel,
 }: {
-  userId: string;
-  onTaskAdded: () => void;
+  initialTask?: Task | null;
+  onSave: () => void;
+  onCancel: () => void;
 }) {
-  const [title, setTitle] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [title, setTitle] = useState(initialTask ? initialTask.title : "");
+  const supabase = createClientComponentClient();
 
-  const handleAdd = async (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
 
-    setLoading(true);
-    try {
-      await addTask({ title, userId });
-      setTitle("");
-      onTaskAdded();
-    } catch (err) {
-      console.error("Add task failed:", err);
-    } finally {
-      setLoading(false);
+    if (initialTask) {
+      await supabase.from("tasks").update({ title }).eq("id", initialTask.id);
+    } else {
+      await supabase.from("tasks").insert({ title });
     }
-  };
+    setTitle("");
+    onSave();
+  }
 
   return (
-    <form onSubmit={handleAdd} className="flex justify-center mt-8 mb-10 gap-3">
+    <form onSubmit={handleSubmit} className="flex gap-2 items-center">
       <input
+        className="flex-1 px-3 py-2 border rounded-md"
+        placeholder="Enter new task"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        placeholder="Add a new task..."
-        className="text-black border-2 border-purple-400 rounded-lg px-4 py-2 w-80 focus:outline-none focus:ring-2 focus:ring-purple-500"
+        required
       />
       <button
         type="submit"
-        disabled={loading}
-        className="bg-purple-600 text-white px-5 py-2 rounded-lg hover:bg-purple-700 transition disabled:opacity-50"
+        className="px-4 py-2 bg-green-500 text-white rounded-md"
       >
-        {loading ? "Adding..." : "Add"}
+        {initialTask ? "Update" : "Add"}
       </button>
+      {initialTask && (
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-4 py-2 bg-gray-300 rounded-md"
+        >
+          Cancel
+        </button>
+      )}
     </form>
   );
 }

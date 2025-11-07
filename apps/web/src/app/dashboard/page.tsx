@@ -1,59 +1,44 @@
 "use client";
+import { useState } from "react";
+import TaskList from "./TaskList";
+import TaskForm from "./TaskForm";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "../../../lib/supabaseClient";
-import type { User } from "@supabase/supabase-js";
-import { TaskForm } from "./TaskForm";
-import { TaskList } from "./TaskList";
-
-function SignOutButton() {
-  const router = useRouter();
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push("/");
-  };
-  return (
-    <button
-      onClick={handleSignOut}
-      className="absolute top-5 right-5 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-700 transition"
-    >
-      Sign Out
-    </button>
-  );
+interface Task {
+  id: number;
+  title: string;
+  iscompleted: boolean;
+  userid: string;
+  created_at: string;
 }
 
-export default function Dashboard() {
-  const [user, setUser] = useState<User | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
-  const router = useRouter();
+export default function DashboardPage() {
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [refreshFlag, setRefreshFlag] = useState(0);
 
-  useEffect(() => {
-    const getUser = async () => {
-      const { data, error } = await supabase.auth.getUser();
-      if (error || !data?.user) {
-        router.push("/");
-        return;
-      }
-      setUser(data.user);
-    };
-    getUser();
-  }, [router]);
-
-  if (!user) return <div>Loading...</div>;
+  function handleEdit(task: Task) {
+    setEditingTask(task);
+  }
+  function handleSave() {
+    setEditingTask(null);
+    setRefreshFlag((f) => f + 1);
+  }
+  function handleCancel() {
+    setEditingTask(null);
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-100 via-rose-200 to-purple-200 relative">
-      <SignOutButton />
-      <h1 className="text-5xl font-bold text-center py-10 text-purple-700">
-        Personal TODOs
+    <main className="max-w-xl mx-auto py-8">
+      <h1 className="text-3xl font-bold mb-6 text-blue-800 text-center">
+        My Task Dashboard
       </h1>
-
       <TaskForm
-        userId={user.id}
-        onTaskAdded={() => setRefreshKey((k) => k + 1)}
+        initialTask={editingTask}
+        onSave={handleSave}
+        onCancel={handleCancel}
       />
-      <TaskList userId={user.id} refreshKey={refreshKey} />
-    </div>
+      <div className="mt-8">
+        <TaskList key={refreshFlag} onEdit={handleEdit} />
+      </div>
+    </main>
   );
 }

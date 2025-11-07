@@ -1,6 +1,7 @@
 {
 	"dependencies": {
-		"zod": "^4.1.12",
-		"framer-motion": "^12.23.24"
+		"framer-motion": "^12.23.24",
+		"lucide-react": "^0.552.0",
+		"zod": "^4.1.12"
 	}
 }

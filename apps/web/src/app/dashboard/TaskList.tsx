@@ -1,53 +1,72 @@
 "use client";
-
 import { useEffect, useState } from "react";
-import { supabase } from "../../../lib/supabaseClient";
-import { TaskItem } from "./TaskItem";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
-export function TaskList({
-  userId,
-  refreshKey,
-}: {
-  userId: string;
-  refreshKey: number;
-}) {
-  const [tasks, setTasks] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+interface Task {
+  id: number;
+  title: string;
+  iscompleted: boolean;
+  userid: string;
+  created_at: string;
+}
 
-  const fetchTasks = async () => {
-    setLoading(true);
+export default function TaskList({ onEdit }: { onEdit: (task: Task) => void }) {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const supabase = createClientComponentClient();
+
+  async function fetchTasks() {
     const { data, error } = await supabase
       .from("tasks")
       .select("*")
-      .eq("userid", userId)
-      .order("id", { ascending: false });
+      .order("created_at", { ascending: false });
+    if (data) setTasks(data);
+  }
 
-    if (error) console.error("Error fetching tasks:", error.message);
-    setTasks(data || []);
-    setLoading(false);
-  };
+  async function deleteTask(id: number) {
+    await supabase.from("tasks").delete().eq("id", id);
+    fetchTasks();
+  }
+
+  async function toggleComplete(task: Task) {
+    await supabase
+      .from("tasks")
+      .update({ iscompleted: !task.iscompleted })
+      .eq("id", task.id);
+    fetchTasks();
+  }
 
   useEffect(() => {
     fetchTasks();
-  }, [refreshKey]);
-
-  if (loading) return <p className="text-center text-gray-600">Loading...</p>;
-
-  if (tasks.length === 0)
-    return (
-      <p className="text-center text-gray-500 italic">No tasks yet. Add one!</p>
-    );
+  }, []);
 
   return (
-    <div className="max-w-lg mx-auto">
+    <ul className="text-gray-700 space-y-3">
       {tasks.map((task) => (
-        <TaskItem
+        <li
           key={task.id}
-          task={task}
-          userId={userId}
-          refresh={fetchTasks}
-        />
+          className={`flex items-center justify-between px-4 py-2 rounded-md shadow bg-white ${
+            task.iscompleted ? "opacity-70 line-through" : ""
+          }`}
+        >
+          <span onClick={() => toggleComplete(task)} className="cursor-pointer">
+            {task.title}
+          </span>
+          <div className="flex gap-2">
+            <button
+              className="px-2 py-1 rounded bg-blue-400 text-white"
+              onClick={() => onEdit(task)}
+            >
+              Edit
+            </button>
+            <button
+              className="px-2 py-1 rounded bg-red-400 text-white"
+              onClick={() => deleteTask(task.id)}
+            >
+              Delete
+            </button>
+          </div>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }
