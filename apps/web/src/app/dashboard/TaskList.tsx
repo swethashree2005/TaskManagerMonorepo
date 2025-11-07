@@ -1,14 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-
-interface Task {
-  id: number;
-  title: string;
-  iscompleted: boolean;
-  userid: string;
-  created_at: string;
-}
+import type { Task } from "./page";
 
 export default function TaskList({ onEdit }: { onEdit: (task: Task) => void }) {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -19,7 +12,7 @@ export default function TaskList({ onEdit }: { onEdit: (task: Task) => void }) {
       .from("tasks")
       .select("*")
       .order("created_at", { ascending: false });
-    if (data) setTasks(data);
+    setTasks(data ?? []);
   }
 
   async function deleteTask(id: number) {
@@ -40,7 +33,12 @@ export default function TaskList({ onEdit }: { onEdit: (task: Task) => void }) {
   }, []);
 
   return (
-    <ul className="text-gray-700 space-y-4 animate-fade-in">
+    <ul className="text-gray-600 space-y-4 animate-fade-in">
+      {tasks.length === 0 && (
+        <li className="text-center text-gray-500">
+          No tasks found. Start by adding one!
+        </li>
+      )}
       {tasks.map((task) => (
         <li
           key={task.id}

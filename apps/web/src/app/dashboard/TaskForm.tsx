@@ -1,14 +1,7 @@
 "use client";
 import { useState } from "react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-
-interface Task {
-  id: number;
-  title: string;
-  iscompleted: boolean;
-  userid: string;
-  created_at: string;
-}
+import type { Task } from "./page";
 
 export default function TaskForm({
   initialTask,
@@ -37,10 +30,10 @@ export default function TaskForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className=" text-gray-500 flex gap-2 items-center animate-fade-in"
+      className=" text-gray-600 flex gap-2 items-center animate-fade-in"
     >
       <input
-        className="text-gray-700 flex-1 px-3 py-2 border-2 border-purple-500 rounded-md focus:outline-none focus:ring focus:ring-blue-300"
+        className="flex-1 px-3 py-2 border-2 border-purple-500 rounded-md focus:outline-none focus:ring focus:ring-blue-300"
         placeholder="Enter new task"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
