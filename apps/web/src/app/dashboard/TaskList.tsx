@@ -15,7 +15,7 @@ export default function TaskList({ onEdit }: { onEdit: (task: Task) => void }) {
   const supabase = createClientComponentClient();
 
   async function fetchTasks() {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("tasks")
       .select("*")
       .order("created_at", { ascending: false });
@@ -40,26 +40,33 @@ export default function TaskList({ onEdit }: { onEdit: (task: Task) => void }) {
   }, []);
 
   return (
-    <ul className="text-gray-700 space-y-3">
+    <ul className="text-gray-700 space-y-4 animate-fade-in">
       {tasks.map((task) => (
         <li
           key={task.id}
-          className={`flex items-center justify-between px-4 py-2 rounded-md shadow bg-white ${
-            task.iscompleted ? "opacity-70 line-through" : ""
-          }`}
+          className={`flex items-center justify-between px-4 py-3 rounded-xl shadow-lg bg-white/70 transition-all duration-300
+            ${
+              task.iscompleted
+                ? "opacity-60 line-through bg-gradient-to-r from-gray-200 via-purple-100 to-blue-100"
+                : "hover:scale-105 hover:shadow-blue-400"
+            }
+          `}
         >
-          <span onClick={() => toggleComplete(task)} className="cursor-pointer">
+          <span
+            onClick={() => toggleComplete(task)}
+            className="cursor-pointer text-lg font-medium hover:text-blue-600 transition duration-300"
+          >
             {task.title}
           </span>
           <div className="flex gap-2">
             <button
-              className="px-2 py-1 rounded bg-blue-400 text-white"
+              className="px-3 py-1 rounded-lg bg-gradient-to-r from-blue-400 to-purple-400 text-white hover:animate-bounce"
               onClick={() => onEdit(task)}
             >
               Edit
             </button>
             <button
-              className="px-2 py-1 rounded bg-red-400 text-white"
+              className="px-3 py-1 rounded-lg bg-gradient-to-r from-pink-400 to-yellow-400 text-white hover:animate-pulse"
               onClick={() => deleteTask(task.id)}
             >
               Delete

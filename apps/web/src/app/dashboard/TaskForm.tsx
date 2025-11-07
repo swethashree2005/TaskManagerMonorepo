@@ -25,7 +25,6 @@ export default function TaskForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
-
     if (initialTask) {
       await supabase.from("tasks").update({ title }).eq("id", initialTask.id);
     } else {
@@ -36,17 +35,21 @@ export default function TaskForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2 items-center">
+    <form
+      onSubmit={handleSubmit}
+      className=" text-gray-500 flex gap-2 items-center animate-fade-in"
+    >
       <input
-        className="flex-1 px-3 py-2 border rounded-md"
+        className="text-gray-700 flex-1 px-3 py-2 border-2 border-purple-500 rounded-md focus:outline-none focus:ring focus:ring-blue-300"
         placeholder="Enter new task"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         required
+        autoFocus
       />
       <button
         type="submit"
-        className="px-4 py-2 bg-green-500 text-white rounded-md"
+        className="px-4 py-2 bg-gradient-to-r from-green-400 via-blue-400 to-purple-400 text-white rounded-lg shadow-lg hover:scale-105 transition-all duration-300"
       >
         {initialTask ? "Update" : "Add"}
       </button>
@@ -54,7 +57,7 @@ export default function TaskForm({
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 bg-gray-300 rounded-md"
+          className="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400 transition-all duration-300"
         >
           Cancel
         </button>
