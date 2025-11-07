@@ -1,28 +1,86 @@
-name: Deploy Next.js App to Vercel
+name: CI / CD — Lint · Test · Build · Deploy
 
 on:
   push:
     branches:
       - main
+      - 'release/**'
+      - 'feature/**'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch: {}
 
 jobs:
-  deploy:
+  ci:
+    name: CI — install · lint · test · build
     runs-on: ubuntu-latest
+    outputs:
+      build_artifact: ${{ steps.build.outputs.build-artifact || '' }}
     steps:
-      - name: Checkout code
+      - name: Checkout repo
         uses: actions/checkout@v4
-      - name: Install Node.js
+
+      - name: Use Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: 20.x
-          cache: 'pnpm'
-      - name: Install pnpm
-        run: npm install -g pnpm
+          node-version: 20
+          cache: 'npm'
+
       - name: Install dependencies
-        run: pnpm install
-      - name: Install Vercel CLI
-        run: npm install --global vercel
-      - name: Deploy to Vercel
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint
+        # If you don't have lint script, replace with a no-op or remove
+
+      - name: Run unit tests
+        run: npm test --silent
+        # Make sure your package.json has "test" script. Adjust as needed.
+
+      - name: Build (production)
+        id: build
+        run: |
+          npm run build
+          # optionally produce a zipped artifact for debugging
+          if [ -d ".vercel_build_output" ]; then
+            echo "vercel build output exists"
+          fi
+        continue-on-error: false
+
+  deploy:
+    name: Deploy to Vercel
+    needs: ci
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'pull_request' ||          # preview deploys for PRs
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') # prod only on main
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install vercel CLI
+        run: npm i -g vercel@4
+
+      - name: Vercel deploy (preview or production)
         env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: npx vercel --prod --token $VERCEL_TOKEN
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN1 }}
+          # Optional: set the following if you want to force project/org
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID || '' }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID || '' }}
+        run: |
+          # For PRs => preview deployment
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "Preview deploy for PR #${{ github.event.pull_request.number }}"
+            vercel --token $VERCEL_TOKEN --confirm --prod=false --yes
+            # Note: --prod=false ensures a preview deployment
+          else
+            # For main pushes => production deployment
+            echo "Production deploy for branch ${GITHUB_REF#refs/heads/}"
+            vercel --token $VERCEL_TOKEN --prod --confirm --yes
+          fi
