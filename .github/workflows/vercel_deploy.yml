@@ -1,10 +1,12 @@
-name: CI/CD Pipeline
+name: CI Pipeline
 
 on:
   pull_request:
-    branches: [main]
+    branches:
+      - main
   push:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
   ci:
@@ -23,7 +25,7 @@ jobs:
         uses: pnpm/action-setup@v2
         with:
           version: 8
-          run_install: false
+          run_install: true
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -35,13 +37,13 @@ jobs:
         run: pnpm turbo typecheck
 
   deploy:
-    needs: ci
-    runs-on: ubuntu-latest
     if: >-
-      github.event_name == 'push' && github.ref == 'refs/heads/main'
+      github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    needs: ci
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      # Replace with your actual deployment command (e.g., Vercel CLI or skip for Vercel integration)
+
       - name: Deploy placeholder
-        run: echo "Deploying..."
+        run: echo "Add your deploy command here"
