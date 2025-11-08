@@ -39,7 +39,7 @@ export default function DashboardPage() {
       <div className="absolute top-30 left-300 w-10 h-10 bg-blue-400 rounded-full animate-ping opacity-40" />
 
       <h1 className="text-5xl font-extrabold mb-8 text-center bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-pink-500 to-yellow-400 animate-pulse">
-        My Tasks In Progress..
+        My Tasks In Progress...
       </h1>
       <div className="max-w-xl mx-auto p-4 relative z-10">
         <TaskForm
