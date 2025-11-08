@@ -58,6 +58,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Example placeholder deploy step. Replace with your actual deployment steps (Vercel CLI or integration).
+      # Replace this with your actual deploy command or Vercel CLI usage
       - name: Deploy placeholder
         run: echo "Add your deploy command here"
