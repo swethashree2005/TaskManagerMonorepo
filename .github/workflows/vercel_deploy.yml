@@ -8,9 +8,14 @@ on:
     branches:
       - main
 
+concurrency:
+  group: ci-pipeline-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   ci:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -21,11 +26,19 @@ jobs:
           node-version: '18'
           cache: 'pnpm'
 
-      - name: Set up pnpm
+      - name: Set up pnpm (preferred)
         uses: pnpm/action-setup@v2
         with:
           version: 8
-          run_install: true
+          run_install: false
+
+      - name: Ensure pnpm is available (fallback)
+        run: |
+          if ! command -v pnpm >/dev/null 2>&1; then
+            echo "pnpm not found — installing pnpm@8 globally as fallback"
+            npm install -g pnpm@8
+          fi
+          echo "pnpm version: $(pnpm --version)"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -45,5 +58,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # Example placeholder deploy step. Replace with your actual deployment steps (Vercel CLI or integration).
       - name: Deploy placeholder
         run: echo "Add your deploy command here"
