@@ -1,12 +1,10 @@
-name: CI Pipeline
+name: CI/CD Pipeline
 
 on:
   pull_request:
-    branches:
-      - main
+    branches: [main]
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   ci:
@@ -36,16 +34,14 @@ jobs:
       - name: Run typecheck
         run: pnpm turbo typecheck
 
-  # Optional: deploy job example (with safe conditional)
   deploy:
-    # Run only on main branch push or on pull request (for previews)
-    if: >-
-      github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
-    runs-on: ubuntu-latest
     needs: ci
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      # Add your deploy steps here (e.g., using the Vercel CLI, or use Vercel GitHub integration)
+      # Replace with your actual deployment command (e.g., Vercel CLI or skip for Vercel integration)
       - name: Deploy placeholder
-        run: echo "Add your deploy command here"
+        run: echo "Deploying..."
