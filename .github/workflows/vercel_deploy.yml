@@ -4,6 +4,9 @@ on:
   pull_request:
     branches:
       - main
+  push:
+    branches:
+      - main
 
 jobs:
   ci:
@@ -15,25 +18,34 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18' # Set your Node.js version here
-          cache: 'pnpm'      # Enables pnpm dependency cache
+          node-version: '18'
+          cache: 'pnpm'
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 8         # Set your pnpm version here
-          run_install: false # We'll run install manually
+          version: 8
+          run_install: false
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Run lint
         run: pnpm lint
-        # Adjust command if your linter setup is different
 
       - name: Run typecheck
         run: pnpm turbo typecheck
-        # If not using turbo, replace with your own type-check command
 
-      # Optional: Add more quality checks, tests, or build steps here
-      # For deployment to Vercel, you can add a deploy job or use Vercel's GitHub integration.
+  # Optional: deploy job example (with safe conditional)
+  deploy:
+    # Run only on main branch push or on pull request (for previews)
+    if: >-
+      github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    needs: ci
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      # Add your deploy steps here (e.g., using the Vercel CLI, or use Vercel GitHub integration)
+      - name: Deploy placeholder
+        run: echo "Add your deploy command here"
